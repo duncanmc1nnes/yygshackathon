@@ -13,10 +13,11 @@
       Cuisine: <select name="c"><br>
         {% for i in restaurant %}
         <option value={{i}}>{{i.name}}</option>
+        {% endfor %}
         </select><br>
       Earliest Time: <input type="datetime-local" name="d-min"><br>
       Latest Time: <input type="datetime-local" name="d-max"><br>
-      <input type="submit" value="Search">
+      <input type="submit" name="filter" value="Search"><input type="submit" name="clear" value="Clear Filter">
    </form>
     <table border="1">
         <thead>

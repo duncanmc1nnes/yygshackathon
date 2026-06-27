@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from models import db, Party, Member, Message
+import party
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -10,8 +11,7 @@ with app.app_context():
 
 @app.route('/')
 def home():
-    parties = Party.query.all()
-    return render_template('home.html', parties=parties)
+    return render_template('home.html')
 
 @app.route('/party/create', methods=['POST'])
 def create_party():
