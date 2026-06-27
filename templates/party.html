@@ -10,10 +10,13 @@
     <h1>Party Search</h1>
     <h3>Search Parameters:</h3>
     <form method="POST">
-      Cusine: <input name="c"><br>
-      Earliest Time: <input type="datetime" name="cf", min="2026-01-01"><br>
-      Latest Time: <input type="datetime" name="cq", max="2027-01-01"><br>
-      <input type="submit" value="Add Value">
+      Cuisine: <select name="c"><br>
+        {% for i in restaurant %}
+        <option value={{i}}>{{i.name}}</option>
+        </select><br>
+      Earliest Time: <input type="datetime-local" name="d-min"><br>
+      Latest Time: <input type="datetime-local" name="d-max"><br>
+      <input type="submit" value="Search">
    </form>
     <table border="1">
         <thead>
@@ -26,7 +29,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for i in data %}
+            {% for i in parties %}
             <tr>
                 <td>{{ i.r_name }}</td>
                 <td>{{ i.c }}</td>
