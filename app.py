@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db, Party, Member, Message
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
+from models import db, Party, Member, Message, User
 import party
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SECRET_KEY'] = 'super_secret_key_for_yygs_hackathon'
 db.init_app(app)
 
 with app.app_context():
@@ -11,7 +12,56 @@ with app.app_context():
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('home.html', username=session['username'])
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        
+        # Check if username or email already exists
+        existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
+        if existing_user:
+            flash('Username or Email already exists.', 'error')
+        else:
+            new_user = User(username=username, email=email, password=password)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+            
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username_or_email = request.form['username_or_email']
+        password = request.form['password']
+        
+        user = User.query.filter(
+            ((User.username == username_or_email) | (User.email == username_or_email)) & 
+            (User.password == password)
+        ).first()
+        
+        if user:
+            session['user_id'] = user.id
+            session['username'] = user.username
+            flash('Login successful!', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid credentials. Please try again.', 'error')
+            
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('login'))
 
 @app.route('/party/create', methods=['POST'])
 def create_party():
