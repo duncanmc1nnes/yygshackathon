@@ -3,6 +3,7 @@ body{
     background-color: #00356B;
     color: white;
     margin: 0;
+    padding-top: 90px;
 }
 
 .hero{
@@ -22,7 +23,9 @@ h1{
 h1 span{
     color: lightblue;
 }
-
+span{
+    letter-spacing: 3px;
+}
 .subtitle{
     margin-bottom: 20px;
 }
@@ -58,5 +61,128 @@ th,
 td{
     border: 1px solid black;
     padding: 10px;
+    text-align: center;
+}
+
+.navbar{
+
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    padding:20px 6%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:rgba(6,20,32,.82);
+    backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(127,220,255,.15);
+    z-index:1000;
+}
+
+.logo{
+    color:#7fdcff;
+    font-size:1.4rem;
+    font-weight:700;
+    letter-spacing:2px;
+    text-shadow:0 0 10px rgba(127,220,255,.4);
+}
+
+.nav-links{
+    display:flex;
+    list-style:none;
+    gap:35px;
+}
+
+.nav-links a{
+    color:white;
+    text-decoration:none;
+    font-weight:500;
+    transition:.3s;
+    position:relative;
+}
+
+.nav-links a:hover{
+    color:#7fdcff;
+}
+
+.nav-links a::after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:-6px;
+    width:0;
+    height:2px;
+    background:#7fdcff;
+    transition:.3s;
+}
+
+.nav-links a:hover::after{
+    width:100%;
+}
+
+@media(max-width:900px){
+
+.navbar{
+    flex-direction:column;
+    gap:15px;
+}
+
+.nav-links{
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:18px;
+}
+
+.logo{
+    text-align:center;
+}
+
+}
+.nav-links a.active{
+    color:#7fdcff;
+}
+
+.nav-links a.active::after{
+    width:100%;
+}
+
+.nav-links a:hover{
+    color:#7fdcff;
+}
+
+.nav-links a::after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:-6px;
+    width:0;
+    height:2px;
+    background:#7fdcff;
+    transition:.3s;
+}
+
+.nav-links a:hover::after{
+    width:100%;
+}
+.links{
+    text-align: center;
+    margin-top: 20px;
+}
+
+.links a{
+    color: white;
+    text-decoration: underline;
+}
+
+.links a:hover{
+    color: lightblue;
+}
+h2{
+    text-align: center;
+    margin-top: 30px;
+}
+
+p{
     text-align: center;
 }
