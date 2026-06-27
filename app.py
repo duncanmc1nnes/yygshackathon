@@ -1,8 +1,12 @@
 import random
 import string
+import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from models import db, Party, Member, Message, User, Friendship, DirectMessage, ChatRoom, ChatRoomMember, ChatRoomMessage
 from functools import wraps
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -254,7 +258,7 @@ def room(room_id):
     members = ChatRoomMember.query.filter_by(room_id=room_id).all()
     return render_template('room.html', room=chat_room, messages=messages, members=members, current_user_id=session['user_id'])
 
-# ─── Party Routes (from team) ─────────────────────────────────────────────────
+# ─── Party Routes ─────────────────────────────────────────────────────────────
 
 @app.route('/party/create', methods=['GET', 'POST'])
 @login_required
@@ -271,7 +275,9 @@ def create_party():
         db.session.commit()
         flash('Party created!', 'success')
         return redirect(url_for('home'))
-    return render_template('create_party.html')
+    r_name = request.args.get('r_name', '')
+    c = request.args.get('c', '')
+    return render_template('create_party.html', r_name=r_name, c=c)
 
 @app.route('/party/<int:party_id>')
 @login_required
@@ -331,6 +337,22 @@ def party_search():
         parties = parties.filter(Party.p_date == date)
     parties = parties.order_by(Party.created_at.desc()).all()
     return render_template('party_search.html', parties=parties, query=query, cuisine=cuisine, date=date)
+
+# ─── Restaurant Search ────────────────────────────────────────────────────────
+
+@app.route('/restaurant_search')
+@login_required
+def restaurant_search():
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    return render_template('restaurant_search.html', api_key=api_key)
+
+# ─── Map ─────────────────────────────────────────────────────────────────────
+
+@app.route('/map')
+@login_required
+def map_view():
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    return render_template('map.html', api_key=api_key)
 
 if __name__ == '__main__':
     app.run(debug=True)
