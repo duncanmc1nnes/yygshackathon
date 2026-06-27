@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ header_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Party Search</h1>
+    <h3>Search Parameters:</h3>
+    <form method="POST">
+      Cusine: <input name="c"><br>
+      Earliest Time: <input type="datetime" name="cf", min="2026-01-01"><br>
+      Latest Time: <input type="datetime" name="cq", max="2027-01-01"><br>
+      <input type="submit" value="Add Value">
+   </form>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Restaurant Name</th>
+                <th>Cuisine</th>
+                <th>Party Size</th>
+                <th>Party Host</th>
+                <th>Time of Day</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in data %}
+            <tr>
+                <td>{{ i.r_name }}</td>
+                <td>{{ i.c }}</td>
+                <td>{{ i.p_size }}</td>
+                <td>{{ i.p_host }}</td>
+                <td>{{ i.p_date }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
