@@ -15,10 +15,13 @@ def home():
 
 @app.route('/party/create', methods=['POST'])
 def create_party():
-    restaurant = request.form['restaurant']
-    creator = request.form['creator']
-    time = request.form['time']
-    party = Party(restaurant=restaurant, creator=creator, time=time)
+    party = Party(
+        r_name=request.form['r_name'],
+        c=request.form['c'],
+        p_size=request.form['p_size'],
+        p_host=request.form['p_host'],
+        p_date=request.form['p_date']
+    )
     db.session.add(party)
     db.session.commit()
     return redirect(url_for('home'))
