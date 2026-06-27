@@ -70,9 +70,9 @@ td{
     top:0;
     left:0;
     width:100%;
-    padding:20px 6%;
+    padding:20px 3%;
     display:flex;
-    justify-content:space-between;
+    justify-content:flex-start;
     align-items:center;
     background:rgba(6,20,32,.82);
     backdrop-filter:blur(18px);
@@ -131,11 +131,12 @@ td{
 .nav-links{
     flex-wrap:wrap;
     justify-content:center;
-    gap:18px;
+    margin-left: 20px;
 }
 
 .logo{
     text-align:center;
+    margin-right: 20px;
 }
 
 }

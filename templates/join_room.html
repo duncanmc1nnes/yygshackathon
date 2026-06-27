@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1>Join a Room by Code</h1>
-    <p><a href="{{ url_for('home') }}">&larr; Back to Dashboard</a> |
+    <p class="links"><a href="{{ url_for('home') }}">&larr; Back to Dashboard</a> |
        <a href="{{ url_for('browse_rooms') }}">Browse Public Rooms</a></p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
