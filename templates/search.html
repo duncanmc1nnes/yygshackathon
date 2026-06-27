@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Users</title>
+</head>
+<body>
+    <h1>Search Users</h1>
+    <p><a href="{{ url_for('home') }}">&larr; Back to Dashboard</a></p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="color: {% if category == 'error' %}red{% elif category == 'success' %}green{% else %}blue{% endif %};">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('search_users') }}">
+        <label for="query">Search by username or user ID:</label><br>
+        <input type="text" id="query" name="query" value="{{ query }}" placeholder="Enter username or ID" required>
+        <button type="submit">Search</button>
+    </form>
+
+    {% if results %}
+        <h2>Results</h2>
+        <ul>
+        {% for user in results %}
+            <li>
+                <strong>{{ user.username }}</strong> (ID: {{ user.id }})
+                <form method="POST" action="{{ url_for('add_friend', target_id=user.id) }}" style="display:inline;">
+                    <button type="submit">Add Friend</button>
+                </form>
+            </li>
+        {% endfor %}
+        </ul>
+    {% elif query %}
+        <p>No users found matching "{{ query }}".</p>
+    {% endif %}
+</body>
+</html>

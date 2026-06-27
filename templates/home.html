@@ -2,12 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Home</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Dashboard</title>
 </head>
 <body>
-    <h2>Home</h2>
-    <p>Welcome, {{ username }}!</p>
-    <p><a href="{{ url_for('logout') }}">Logout</a></p>
+    <h1>Welcome, {{ user.username }}! (User ID: {{ user.id }})</h1>
+    <p><a href="{{ url_for('logout') }}">Logout</a> |
+       <a href="{{ url_for('search_users') }}">Search Users</a> |
+       <a href="{{ url_for('create_room') }}">Create Room</a> |
+       <a href="{{ url_for('join_room') }}">Join Room by Code</a> |
+       <a href="{{ url_for('browse_rooms') }}">Browse Public Rooms</a>
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="color: {% if category == 'error' %}red{% elif category == 'success' %}green{% else %}blue{% endif %};">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <hr>
+
+    <h2>Pending Friend Requests</h2>
+    {% if pending %}
+        <ul>
+        {% for req in pending %}
+            <li>
+                <strong>{{ req.requester.username }}</strong> (ID: {{ req.requester.id }}) sent you a request.
+                <form method="POST" action="{{ url_for('accept_friend', friendship_id=req.id) }}" style="display:inline;">
+                    <button type="submit">Accept</button>
+                </form>
+                <form method="POST" action="{{ url_for('decline_friend', friendship_id=req.id) }}" style="display:inline;">
+                    <button type="submit">Decline</button>
+                </form>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No pending requests.</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Friends</h2>
+    {% if friends %}
+        <ul>
+        {% for friend in friends %}
+            <li>
+                {{ friend.username }} (ID: {{ friend.id }})
+                <a href="{{ url_for('direct_message', friend_id=friend.id) }}">Message</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No friends yet. <a href="{{ url_for('search_users') }}">Search for users</a> to add them.</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Your Chat Rooms</h2>
+    {% if rooms %}
+        <ul>
+        {% for room in rooms %}
+            <li>
+                <strong>{{ room.name }}</strong>
+                (Code: <code>{{ room.code }}</code> | {% if room.is_public %}Public{% else %}Private{% endif %})
+                <a href="{{ url_for('room', room_id=room.id) }}">Open</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>You haven't joined any rooms yet.</p>
+    {% endif %}
 </body>
 </html>

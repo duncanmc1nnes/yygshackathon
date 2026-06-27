@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Room: {{ room.name }}</title>
+</head>
+<body>
+    <h1>{{ room.name }}</h1>
+    <p>
+        Room Code: <strong><code>{{ room.code }}</code></strong> |
+        {% if room.is_public %}Public{% else %}Private (Invite Only){% endif %} |
+        <a href="{{ url_for('home') }}">&larr; Back to Dashboard</a>
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="color: {% if category == 'error' %}red{% else %}green{% endif %};">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div style="display: flex; gap: 20px;">
+
+        <!-- Chat area -->
+        <div style="flex: 3;">
+            <div id="chat-box" style="border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; margin-bottom: 10px;">
+                {% if messages %}
+                    {% for msg in messages %}
+                        <div>
+                            <strong>{% if msg.sender_id == current_user_id %}You{% else %}{{ msg.sender.username }}{% endif %}</strong>
+                            <small>[{{ msg.timestamp.strftime('%H:%M %d/%m/%Y') }}]</small>:
+                            {{ msg.content }}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No messages yet. Start the conversation!</p>
+                {% endif %}
+            </div>
+
+            <form method="POST" action="{{ url_for('room', room_id=room.id) }}">
+                <input type="text" name="content" id="content" placeholder="Type a message..." required style="width: 80%;">
+                <button type="submit">Send</button>
+            </form>
+        </div>
+
+        <!-- Members sidebar -->
+        <div style="flex: 1; border-left: 1px solid #ccc; padding-left: 10px;">
+            <h3>Members ({{ members|length }})</h3>
+            <ul>
+            {% for m in members %}
+                <li>{{ m.user.username }} {% if m.user_id == room.owner_id %}(owner){% endif %}</li>
+            {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+    </script>
+</body>
+</html>

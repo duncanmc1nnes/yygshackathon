@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Browse Public Rooms</title>
+</head>
+<body>
+    <h1>Browse Public Rooms</h1>
+    <p><a href="{{ url_for('home') }}">&larr; Back to Dashboard</a> |
+       <a href="{{ url_for('join_room') }}">Join by Code</a> |
+       <a href="{{ url_for('create_room') }}">Create a Room</a></p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="color: {% if category == 'error' %}red{% else %}green{% endif %};">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if rooms %}
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Room Name</th>
+                    <th>Code</th>
+                    <th>Owner</th>
+                    <th>Members</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for room in rooms %}
+                <tr>
+                    <td>{{ room.name }}</td>
+                    <td><code>{{ room.code }}</code></td>
+                    <td>{{ room.owner.username }}</td>
+                    <td>{{ room.room_members|length }}</td>
+                    <td>
+                        {% if room.id in user_room_ids %}
+                            <a href="{{ url_for('room', room_id=room.id) }}">Open</a>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('join_room') }}" style="display:inline;">
+                                <input type="hidden" name="code" value="{{ room.code }}">
+                                <button type="submit">Join</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No public rooms available. <a href="{{ url_for('create_room') }}">Create one!</a></p>
+    {% endif %}
+</body>
+</html>

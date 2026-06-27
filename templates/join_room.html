@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Join Room</title>
+</head>
+<body>
+    <h1>Join a Room by Code</h1>
+    <p><a href="{{ url_for('home') }}">&larr; Back to Dashboard</a> |
+       <a href="{{ url_for('browse_rooms') }}">Browse Public Rooms</a></p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="color: {% if category == 'error' %}red{% else %}green{% endif %};">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('join_room') }}">
+        <label for="code">Room Code:</label><br>
+        <input type="text" id="code" name="code" required placeholder="Enter 8-character room code" maxlength="8" style="text-transform: uppercase;"><br><br>
+        <button type="submit">Join Room</button>
+    </form>
+</body>
+</html>
