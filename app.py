@@ -38,15 +38,12 @@ def home():
     user = User.query.get(session['user_id'])
     parties = Party.query.order_by(Party.created_at.desc()).all()
 
-    # Friends (accepted friendships)
     sent = Friendship.query.filter_by(requester_id=user.id, status='accepted').all()
     received = Friendship.query.filter_by(receiver_id=user.id, status='accepted').all()
     friends = [f.receiver for f in sent] + [f.requester for f in received]
 
-    # Pending incoming requests
     pending = Friendship.query.filter_by(receiver_id=user.id, status='pending').all()
 
-    # Rooms the user is a member of
     memberships = ChatRoomMember.query.filter_by(user_id=user.id).all()
     rooms = [m.room for m in memberships]
 
