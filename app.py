@@ -5,9 +5,13 @@ from models import db, Party, Member, Message, User, Friendship, DirectMessage, 
 from functools import wraps
 from dotenv import load_dotenv
 from datetime import datetime
+import hashlib
 
 load_dotenv()
 import chat
+
+def generate_sha256(text: str) -> str:
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -57,7 +61,7 @@ def register():
         if existing_user:
             flash('Username or Email already exists.', 'error')
         else:
-            new_user = User(username=username, email=email, password=password)
+            new_user = User(username=username, email=email, password=generate_sha256(password))
             db.session.add(new_user)
             db.session.commit()
             flash('Registration successful! Please log in.', 'success')
@@ -71,7 +75,7 @@ def login():
         password = request.form['password']
         user = User.query.filter(
             ((User.username == username_or_email) | (User.email == username_or_email)) &
-            (User.password == password)
+            (User.password == generate_sha256(password))
         ).first()
         if user:
             session['user_id'] = user.id
