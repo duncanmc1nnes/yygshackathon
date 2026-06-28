@@ -244,18 +244,19 @@ def leave_party(party_id):
 @app.route('/party_search')
 @login_required
 def party_search():
-    query = request.args.get('q', '')
-    cuisine = request.args.get('cuisine', '')
-    date = request.args.get('date', '')
+    query = request.args.get()
+    cuisine = request.args.get()
+    start_date = request.args.get()
+    end_date = request.args.get()
     parties = Party.query
     if query:
         parties = parties.filter(Party.r_name.ilike(f'%{query}%'))
     if cuisine:
         parties = parties.filter(Party.c.ilike(f'%{cuisine}%'))
-    if date:
-        parties = parties.filter(Party.p_date == date)
+    if start_date:
+        parties = parties.filter(Party.p_date == start_date)
     parties = parties.order_by(Party.created_at.desc()).all()
-    return render_template('party_search.html', parties=parties, query=query, cuisine=cuisine, date=date)
+    return render_template('party_search.html', parties=parties, query=query, cuisine=cuisine, date=start_date)
 
 # ─── Restaurant Search ────────────────────────────────────────────────────────
 
