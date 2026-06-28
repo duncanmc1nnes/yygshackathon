@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1>Browse Public Rooms</h1>
-    <p><a href="{{ url_for('home') }}">&larr; Back to Dashboard</a> |
+    <p class="links"><a href="{{ url_for('home') }}" >&larr; Back to Dashboard</a> |
        <a href="{{ url_for('join_room') }}">Join by Code</a> |
        <a href="{{ url_for('create_room') }}">Create a Room</a></p>
 
@@ -52,7 +52,7 @@
             </tbody>
         </table>
     {% else %}
-        <p>No public rooms available. <a href="{{ url_for('create_room') }}">Create one!</a></p>
+        <p class="links">No public rooms available. <a href="{{ url_for('create_room') }}" class="links">Create one!</a></p>
     {% endif %}
 </body>
 </html>

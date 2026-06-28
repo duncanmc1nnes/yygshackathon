@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1>Search Users</h1>
-    <p><a href="{{ url_for('home') }}">&larr; Back to Dashboard</a></p>
+    <p class="links"><a href="{{ url_for('home') }}">&larr; Back to Dashboard</a></p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}

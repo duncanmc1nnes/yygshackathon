@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h1 style="margin-bottom:0.5rem;">🗺️ YYGS Restaurant Map</h1>
+<p style="color:#888; margin-bottom:1.5rem;">Click a pin to see info and get directions</p>
+
+<!-- Map -->
+<div style="border-radius:12px; overflow:hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.15);">
+    <div id="map" style="width:100%; height:550px;"></div>
+</div>
+
+<!-- Info Panel (shows when pin clicked) -->
+<div id="info-panel" style="display:none;" class="card" style="margin-top:1rem;">
+    <div id="info-content"></div>
+</div>
+
+<script>
+    const API_KEY = "{{ api_key }}";
+
+    const CENTER = { lat: 41.3175, lng: -72.9245 };
+
+    const BOUNDS = {
+        north: 41.3215,
+        south: 41.3135,
+        east: -72.9195,
+        west: -72.9265
+    };
+
+    let map;
+    let service;
+    let infoWindow;
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: CENTER,
+            zoom: 15,
+            restriction: {
+                latLngBounds: {
+                    north: BOUNDS.north + 0.005,
+                    south: BOUNDS.south - 0.005,
+                    east: BOUNDS.east + 0.005,
+                    west: BOUNDS.west - 0.005
+                },
+                strictBounds: false
+            },
+            styles: [
+                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
+            ]
+        });
+
+        // Draw boundary rectangle
+        new google.maps.Rectangle({
+            bounds: {
+                north: BOUNDS.north,
+                south: BOUNDS.south,
+                east: BOUNDS.east,
+                west: BOUNDS.west
+            },
+            map: map,
+            strokeColor: '#c0392b',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#c0392b',
+            fillOpacity: 0.05
+        });
+
+        infoWindow = new google.maps.InfoWindow();
+        service = new google.maps.places.PlacesService(map);
+
+        // Search for restaurants in boundary
+        service.nearbySearch({
+            bounds: new google.maps.LatLngBounds(
+                { lat: BOUNDS.south, lng: BOUNDS.west },
+                { lat: BOUNDS.north, lng: BOUNDS.east }
+            ),
+            type: 'restaurant',
+            keyword: 'food'
+        }, (results, status) => {
+            if (status !== google.maps.places.PlacesServiceStatus.OK) return;
+            results.forEach(place => addMarker(place));
+        });
+    }
+
+    function addMarker(place) {
+        const marker = new google.maps.Marker({
+            map: map,
+            position: place.geometry.location,
+            title: place.name,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: '#c0392b',
+                fillOpacity: 1,
+                strokeColor: 'white',
+                strokeWeight: 2
+            }
+        });
+
+        marker.addListener('click', () => {
+            service.getDetails({
+                placeId: place.place_id,
+                fields: [
+                    'name', 'vicinity', 'rating', 'user_ratings_total',
+                    'price_level', 'opening_hours', 'formatted_phone_number',
+                    'website', 'types', 'url'
+                ]
+            }, (details, status) => {
+                if (status !== google.maps.places.PlacesServiceStatus.OK) return;
+
+                const price = details.price_level ? '$'.repeat(details.price_level) : '';
+                const rating = details.rating ? `⭐ ${details.rating}` : '';
+                const openNow = details.opening_hours
+                    ? (details.opening_hours.open_now
+                        ? '<span style="color:green;">🟢 Open Now</span>'
+                        : '<span style="color:red;">🔴 Closed</span>')
+                    : '';
+                const cuisine = details.types
+                    ? details.types
+                        .filter(t => !['point_of_interest','establishment','food'].includes(t))
+                        .join(', ').replaceAll('_', ' ')
+                    : '';
+
+                const panel = document.getElementById('info-panel');
+                const content = document.getElementById('info-content');
+
+                content.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                        <div>
+                            <h2 style="margin-bottom:0.3rem;">${details.name}</h2>
+                            <p style="color:#888; margin-bottom:0.4rem;">${details.vicinity}</p>
+                            <p>${rating} &nbsp; ${price} &nbsp; ${openNow}</p>
+                            ${cuisine
+                                ? `<p style="margin-top:0.4rem; color:#c0392b; text-transform:capitalize;">
+                                   🍴 ${cuisine}</p>`
+                                : ''}
+                            ${details.formatted_phone_number
+                                ? `<p style="margin-top:0.4rem;">📞 ${details.formatted_phone_number}</p>`
+                                : ''}
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:0.5rem; flex-shrink:0;">
+                            <a href="${details.url}" target="_blank" class="btn btn-red">
+                                🗺️ Get Directions
+                            </a>
+                            <a href="/party/create?r_name=${encodeURIComponent(details.name)}&c=${encodeURIComponent(cuisine)}"
+                               class="btn btn-outline">
+                                🎉 Create Party
+                            </a>
+                        </div>
+                    </div>
+                `;
+
+                panel.style.display = 'block';
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        });
+    }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places&callback=initMap"
+    async defer></script>
+
+{% endblock %}

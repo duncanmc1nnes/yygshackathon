@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1>{{ room.name }}</h1>
-    <p>
+    <p class="links">
         Room Code: <strong><code>{{ room.code }}</code></strong> |
         {% if room.is_public %}Public{% else %}Private (Invite Only){% endif %} |
         <a href="{{ url_for('home') }}">&larr; Back to Dashboard</a>
