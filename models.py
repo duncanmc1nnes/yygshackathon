@@ -1,6 +1,6 @@
 # pyrefly: ignore [missing-import]
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, UTC
 
 db = SQLAlchemy()
 
@@ -10,8 +10,8 @@ class Party(db.Model):
     c = db.Column(db.String(100), nullable=False)
     p_size = db.Column(db.Integer, default=6)
     p_host = db.Column(db.String(100), nullable=False)
-    p_date = db.Column(db.String(100), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    p_date = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now(UTC))
     members = db.relationship('Member', backref='party', lazy=True)
     messages = db.relationship('Message', backref='party', lazy=True)
 
@@ -25,7 +25,7 @@ class Message(db.Model):
     content = db.Column(db.String(500), nullable=False)
     sender = db.Column(db.String(100), nullable=False)
     party_id = db.Column(db.Integer, db.ForeignKey('party.id'), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now(UTC))
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)

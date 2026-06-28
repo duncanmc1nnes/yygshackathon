@@ -14,14 +14,14 @@
             <h1>Party <span>Search</span></h1>
             <h3 class="subtitle">Search Parameters:</h3>
             <form method="POST" class="search-form">
-            Cuisine: <select name="c"><br>
+            Cuisine: <input name="c"><br>
                 {% for i in restaurant %}
                 <option value={{i}}>{{i.name}}</option>
                 {% endfor %}
                 </select><br>
                 Earliest Time: <input type="datetime-local" name="d-min"><br>
                 Latest Time: <input type="datetime-local" name="d-max"><br>
-                <input type="submit" name="filter" value="Search"><input type="submit" name="clear" value="Clear Filter">
+                <input type="submit" value="Search"><input type="reset" value="Clear Filter">
             </form>
             <table border="1">
                 <thead>
