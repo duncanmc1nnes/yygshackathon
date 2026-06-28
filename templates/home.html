@@ -7,9 +7,116 @@
 </head>
 <body>
     {% include 'components/header.html' %}
-    <h2>Home</h2>
-    <p>Welcome, {{ username }}!</p>
-    <p class="links"><a href="{{ url_for('logout') }}">Logout</a></p>
+    
+    <div class="dashboard-container">
+        <!-- Header Banner -->
+        <div class="dashboard-header-banner">
+            <div class="dashboard-welcome">
+                <h1>Hello, {{ username }}!</h1>
+                <p>Your ID: <strong>{{ user.id }}</strong></p>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
+        </div>
 
+        <div class="dashboard-grid">
+            <!-- Left Column: Search & Friends -->
+            <div class="dashboard-column">
+                
+                <!-- Search Box -->
+                <div class="dashboard-card">
+                    <h2>Find Friends</h2>
+                    <form method="POST" action="{{ url_for('home') }}" class="search-form">
+                        <input type="text" name="query" value="{{ search_query or '' }}" placeholder="Enter username or ID" required class="search-input">
+                        <button type="submit" class="btn btn-primary search-btn">Search</button>
+                    </form>
+
+                    {% if search_query is not none %}
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                            <h3 style="font-size: 16px; margin-top: 0; margin-bottom: 15px; color: #00356B;">Search Results for "{{ search_query }}"</h3>
+                            {% if search_results %}
+                                <ul class="dashboard-list">
+                                {% for res_user in search_results %}
+                                    <li class="dashboard-list-item">
+                                        <span class="item-info"><strong>{{ res_user.username }}</strong> <span class="item-id">(ID: {{ res_user.id }})</span></span>
+                                        <form method="POST" action="{{ url_for('add_friend', target_id=res_user.id) }}" style="display:inline;">
+                                            <button type="submit" class="btn btn-success">Add Friend</button>
+                                        </form>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="empty-state">No users found.</p>
+                            {% endif %}
+                            <a href="{{ url_for('home') }}" style="display: inline-block; margin-top: 15px; font-size: 14px; text-decoration: none; color: #ff4757; font-weight: 600;">Clear Search</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Friends List -->
+                <div class="dashboard-card">
+                    <h2>Your Friends</h2>
+                    
+                    {% if pending %}
+                        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+                            <h3 style="font-size: 16px; margin-top: 0; margin-bottom: 10px; color: #ff9f43;">Pending Requests ({{ pending|length }})</h3>
+                            <ul class="dashboard-list">
+                            {% for req in pending %}
+                                <li class="dashboard-list-item">
+                                    <span class="item-info"><strong>{{ req.requester.username }}</strong> <span class="item-id">(ID: {{ req.requester.id }})</span></span>
+                                    <div style="display: flex; gap: 8px;">
+                                        <form method="POST" action="{{ url_for('accept_friend', friendship_id=req.id) }}" style="margin: 0;">
+                                            <button type="submit" class="btn btn-success" style="padding: 6px 12px; font-size: 13px;">Accept</button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('decline_friend', friendship_id=req.id) }}" style="margin: 0;">
+                                            <button type="submit" class="btn btn-logout" style="padding: 6px 12px; font-size: 13px; box-shadow: none;">Decline</button>
+                                        </form>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    {% if friends %}
+                        <ul class="dashboard-list">
+                        {% for friend in friends %}
+                            <li class="dashboard-list-item">
+                                <span class="item-info"><strong>{{ friend.username }}</strong> <span class="item-id">(ID: {{ friend.id }})</span></span>
+                                <a href="{{ url_for('direct_message', friend_id=friend.id) }}" class="btn btn-success">Chat</a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="empty-state">You have no friends yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right Column: Parties -->
+            <div class="dashboard-column">
+                <div class="dashboard-card full-height">
+                    <div class="card-header">
+                        <h2>Active Parties</h2>
+                        <a href="{{ url_for('create_party') }}" class="btn btn-primary">+ Create</a>
+                    </div>
+                    {% if parties %}
+                        <ul class="dashboard-list">
+                        {% for party in parties %}
+                            <li class="dashboard-list-item">
+                                <div class="item-info">
+                                    <strong class="item-title">{{ party.r_name }}</strong>
+                                    <span class="item-subtitle">Hosted by {{ party.p_host }}</span>
+                                </div>
+                                <a href="{{ url_for('view_party', party_id=party.id) }}" class="btn btn-info">Join / View</a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="empty-state">No active parties right now.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
