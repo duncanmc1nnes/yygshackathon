@@ -1,229 +1,140 @@
-{% extends 'base.html' %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Find Restaurants</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'components/header.html' %}
+    <div class="dashboard-container">
 
-<h1 style="margin-bottom:0.5rem;">🍴 Restaurants Near YYGS</h1>
-<p style="color:#888; margin-bottom:1.5rem;">All restaurants within the YYGS boundary in New Haven, CT</p>
+        <h1 style="margin-bottom:0.5rem;">🍴 Restaurants Near YYGS</h1>
+        <p style="color:#888; margin-bottom:1.5rem;">All restaurants within the YYGS boundary in New Haven, CT</p>
 
-<!-- Filter Bar -->
-<div class="card">
-    <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
-        <div style="flex:2; min-width:150px;">
-            <label>Search</label>
-            <input type="text" id="searchInput" placeholder="e.g. Pizza, Thai, Burger...">
+        <div class="card">
+            <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+                <div style="flex:2; min-width:150px;">
+                    <label>Search</label>
+                    <input type="text" id="searchInput" placeholder="e.g. Pizza, Thai, Burger...">
+                </div>
+                <div style="flex:1; min-width:120px;">
+                    <label>Type</label>
+                    <select id="typeFilter">
+                        <option value="restaurant">All Restaurants</option>
+                        <option value="cafe">Cafes</option>
+                        <option value="bar">Bars</option>
+                        <option value="bakery">Bakeries</option>
+                        <option value="meal_takeaway">Takeaway</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="btn btn-red" style="margin-top:1.5rem;" onclick="searchRestaurants()">Search</button>
+                    <button class="btn btn-outline" style="margin-top:1.5rem;" onclick="resetSearch()">Clear</button>
+                </div>
+            </div>
         </div>
-        <div style="flex:1; min-width:120px;">
-            <label>Type</label>
-            <select id="typeFilter">
-                <option value="restaurant">All Restaurants</option>
-                <option value="cafe">Cafes</option>
-                <option value="bar">Bars</option>
-                <option value="bakery">Bakeries</option>
-                <option value="meal_takeaway">Takeaway</option>
-            </select>
+
+        <div id="results"></div>
+
+        <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+             background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:2rem; max-width:500px;
+                 width:90%; position:relative; max-height:85vh; overflow-y:auto;">
+                <button onclick="closeModal()" style="position:absolute; top:1rem; right:1rem;
+                    background:none; border:none; font-size:1.5rem; cursor:pointer;">✕</button>
+                <div id="modal-content"></div>
+            </div>
         </div>
-        <div>
-            <button class="btn btn-red" style="margin-top:1.5rem;" onclick="searchRestaurants()">Search</button>
-            <button class="btn btn-outline" style="margin-top:1.5rem;" onclick="resetSearch()">Clear</button>
-        </div>
-    </div>
-</div>
 
-<!-- Results -->
-<div id="results"></div>
+        <script>
+            const API_KEY = "{{ api_key }}";
+            const BOUNDS = { north: 41.3215, south: 41.3135, east: -72.9195, west: -72.9265 };
+            let service;
 
-<!-- Modal -->
-<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-     background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
-    <div style="background:white; border-radius:12px; padding:2rem; max-width:500px;
-         width:90%; position:relative; max-height:85vh; overflow-y:auto;">
-        <button onclick="closeModal()" style="position:absolute; top:1rem; right:1rem;
-            background:none; border:none; font-size:1.5rem; cursor:pointer;">✕</button>
-        <div id="modal-content"></div>
-    </div>
-</div>
+            function initPlaces() {
+                const map = new google.maps.Map(document.createElement('div'));
+                service = new google.maps.places.PlacesService(map);
+                searchRestaurants();
+            }
 
-<script>
-    const API_KEY = "{{ api_key }}";
+            function searchRestaurants() {
+                const keyword = document.getElementById('searchInput').value;
+                const type = document.getElementById('typeFilter').value;
+                document.getElementById('results').innerHTML = '<p style="color:#888; text-align:center; padding:2rem;">Loading...</p>';
+                const request = {
+                    bounds: new google.maps.LatLngBounds({ lat: BOUNDS.south, lng: BOUNDS.west }, { lat: BOUNDS.north, lng: BOUNDS.east }),
+                    type: type,
+                    keyword: keyword || 'food'
+                };
+                service.nearbySearch(request, handleResults);
+            }
 
-    const BOUNDS = {
-        north: 41.3215,
-        south: 41.3135,
-        east: -72.9195,
-        west: -72.9265
-    };
+            function handleResults(results, status) {
+                const container = document.getElementById('results');
+                if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
+                    container.innerHTML = '<div class="card" style="text-align:center; color:#888;"><p>No restaurants found.</p></div>';
+                    return;
+                }
+                container.innerHTML = '';
+                results.forEach(place => {
+                    const rating = place.rating ? `⭐ ${place.rating} <span style="color:#aaa;">(${place.user_ratings_total} reviews)</span>` : '<span style="color:#aaa;">No rating yet</span>';
+                    const openStatus = place.opening_hours ? (place.opening_hours.open_now ? '<span style="color:green;">🟢 Open Now</span>' : '<span style="color:red;">🔴 Closed</span>') : '';
+                    const price = place.price_level ? '$'.repeat(place.price_level) : '';
+                    const photo = place.photos ? place.photos[0].getUrl({ maxWidth: 120, maxHeight: 90 }) : null;
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+                            <div style="flex:1;">
+                                <h2 style="margin-bottom:0.3rem;">${place.name}</h2>
+                                <p style="color:#888; font-size:0.9rem; margin-bottom:0.4rem;">${place.vicinity}</p>
+                                <p style="font-size:0.95rem;">${rating}</p>
+                                <p style="margin-top:0.3rem; font-size:0.9rem;">${price} &nbsp; ${openStatus}</p>
+                            </div>
+                            ${photo ? `<img src="${photo}" style="width:100px; height:75px; object-fit:cover; border-radius:8px;">` : ''}
+                        </div>
+                        <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+                            <button class="btn btn-outline" onclick="openModal('${place.place_id}', event)">More Info</button>
+                            <a href="/party/create?r_name=${encodeURIComponent(place.name)}" class="btn btn-red">🎉 Create Party Here</a>
+                        </div>`;
+                    container.appendChild(card);
+                });
+            }
 
-    let service;
-
-    function initPlaces() {
-        const map = new google.maps.Map(document.createElement('div'));
-        service = new google.maps.places.PlacesService(map);
-        searchRestaurants();
-    }
-
-    function searchRestaurants() {
-        const keyword = document.getElementById('searchInput').value;
-        const type = document.getElementById('typeFilter').value;
-
-        document.getElementById('results').innerHTML =
-            '<p style="color:#888; text-align:center; padding:2rem;">Loading...</p>';
-
-        const request = {
-            bounds: new google.maps.LatLngBounds(
-                { lat: BOUNDS.south, lng: BOUNDS.west },
-                { lat: BOUNDS.north, lng: BOUNDS.east }
-            ),
-            type: type,
-            keyword: keyword || 'food'
-        };
-
-        service.nearbySearch(request, handleResults);
-    }
-
-    function handleResults(results, status) {
-        const container = document.getElementById('results');
-
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
-            container.innerHTML =
-                '<div class="card" style="text-align:center; color:#888;"><p>No restaurants found. Try a different search!</p></div>';
-            return;
-        }
-
-        container.innerHTML = '';
-
-        results.forEach(place => {
-            const rating = place.rating
-                ? `⭐ ${place.rating} <span style="color:#aaa;">(${place.user_ratings_total} reviews)</span>`
-                : '<span style="color:#aaa;">No rating yet</span>';
-            const openStatus = place.opening_hours
-                ? (place.opening_hours.open_now
-                    ? '<span style="color:green;">🟢 Open Now</span>'
-                    : '<span style="color:red;">🔴 Closed</span>')
-                : '';
-            const price = place.price_level ? '$'.repeat(place.price_level) : '';
-            const photo = place.photos
-                ? place.photos[0].getUrl({ maxWidth: 120, maxHeight: 90 })
-                : null;
-
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.style.cursor = 'pointer';
-            card.style.transition = 'box-shadow 0.2s';
-            card.onmouseenter = () => card.style.boxShadow = '0 4px 16px rgba(192,57,43,0.15)';
-            card.onmouseleave = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
-                    <div style="flex:1;">
+            function openModal(placeId, event) {
+                event.stopPropagation();
+                service.getDetails({ placeId: placeId, fields: ['name','vicinity','formatted_phone_number','rating','user_ratings_total','price_level','opening_hours','website','types','photos'] }, (place, status) => {
+                    if (status !== google.maps.places.PlacesServiceStatus.OK) return;
+                    const photo = place.photos ? place.photos[0].getUrl({ maxWidth: 500 }) : null;
+                    const price = place.price_level ? '$'.repeat(place.price_level) : 'N/A';
+                    const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Hours not available';
+                    const rating = place.rating ? `⭐ ${place.rating} (${place.user_ratings_total} reviews)` : 'No rating';
+                    const openNow = place.opening_hours ? (place.opening_hours.open_now ? '🟢 Open Now' : '🔴 Closed Right Now') : '';
+                    const cuisine = place.types ? place.types.filter(t => !['point_of_interest','establishment','food'].includes(t)).join(', ').replaceAll('_', ' ') : '';
+                    document.getElementById('modal-content').innerHTML = `
+                        ${photo ? `<img src="${photo}" style="width:100%; height:180px; object-fit:cover; border-radius:8px; margin-bottom:1rem;">` : ''}
                         <h2 style="margin-bottom:0.3rem;">${place.name}</h2>
-                        <p style="color:#888; font-size:0.9rem; margin-bottom:0.4rem;">${place.vicinity}</p>
-                        <p style="font-size:0.95rem;">${rating}</p>
-                        <p style="margin-top:0.3rem; font-size:0.9rem;">${price} &nbsp; ${openStatus}</p>
-                    </div>
-                    ${photo
-                        ? `<img src="${photo}" style="width:100px; height:75px; object-fit:cover;
-                           border-radius:8px; flex-shrink:0;">`
-                        : ''}
-                </div>
-                <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-                    <button class="btn btn-outline" onclick="openModal('${place.place_id}', event)">
-                        More Info
-                    </button>
-                    <a href="/party/create?r_name=${encodeURIComponent(place.name)}&c=${encodeURIComponent(
-                        place.types ? place.types.filter(t =>
-                            !['point_of_interest','establishment','food'].includes(t)
-                        )[0] || '' : ''
-                    )}" class="btn btn-red">🎉 Create Party Here</a>
-                </div>
-            `;
+                        <p style="color:#888; margin-bottom:0.5rem;">${place.vicinity}</p>
+                        <p>${rating} &nbsp; <strong>${price}</strong> &nbsp; ${openNow}</p>
+                        ${cuisine ? `<p style="margin-top:0.5rem; color:#c0392b; text-transform:capitalize;">🍴 ${cuisine}</p>` : ''}
+                        ${place.formatted_phone_number ? `<p style="margin-top:0.5rem;">📞 ${place.formatted_phone_number}</p>` : ''}
+                        ${place.website ? `<p style="margin-top:0.5rem;">🌐 <a href="${place.website}" target="_blank" style="color:#c0392b;">Visit Website</a></p>` : ''}
+                        <details style="margin-top:1rem;"><summary style="cursor:pointer; font-weight:bold; color:#c0392b;">🕐 Hours</summary><p style="margin-top:0.5rem; font-size:0.9rem; line-height:2;">${hours}</p></details>
+                        <div style="margin-top:1.5rem;">
+                            <a href="/party/create?r_name=${encodeURIComponent(place.name)}" class="btn btn-red" style="width:100%; text-align:center; display:block;">🎉 Create a Party Here</a>
+                        </div>`;
+                    document.getElementById('modal').style.display = 'flex';
+                });
+            }
 
-            container.appendChild(card);
-        });
-    }
+            function closeModal() { document.getElementById('modal').style.display = 'none'; }
+            function resetSearch() { document.getElementById('searchInput').value = ''; document.getElementById('typeFilter').value = 'restaurant'; searchRestaurants(); }
+            document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+        </script>
 
-    function openModal(placeId, event) {
-        event.stopPropagation();
-        service.getDetails({
-            placeId: placeId,
-            fields: [
-                'name', 'vicinity', 'formatted_phone_number', 'rating',
-                'user_ratings_total', 'price_level', 'opening_hours',
-                'website', 'types', 'photos'
-            ]
-        }, (place, status) => {
-            if (status !== google.maps.places.PlacesServiceStatus.OK) return;
+        <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places&callback=initPlaces" async defer></script>
 
-            const photo = place.photos
-                ? place.photos[0].getUrl({ maxWidth: 500 })
-                : null;
-            const price = place.price_level ? '$'.repeat(place.price_level) : 'N/A';
-            const hours = place.opening_hours
-                ? place.opening_hours.weekday_text.join('<br>')
-                : 'Hours not available';
-            const rating = place.rating
-                ? `⭐ ${place.rating} (${place.user_ratings_total} reviews)`
-                : 'No rating';
-            const openNow = place.opening_hours
-                ? (place.opening_hours.open_now
-                    ? '🟢 Open Now'
-                    : '🔴 Closed Right Now')
-                : '';
-            const cuisine = place.types
-                ? place.types.filter(t =>
-                    !['point_of_interest','establishment','food'].includes(t)
-                  ).join(', ').replaceAll('_', ' ')
-                : '';
-
-            document.getElementById('modal-content').innerHTML = `
-                ${photo
-                    ? `<img src="${photo}" style="width:100%; height:180px;
-                       object-fit:cover; border-radius:8px; margin-bottom:1rem;">`
-                    : ''}
-                <h2 style="margin-bottom:0.3rem;">${place.name}</h2>
-                <p style="color:#888; margin-bottom:0.5rem;">${place.vicinity}</p>
-                <p>${rating} &nbsp; <strong>${price}</strong> &nbsp; ${openNow}</p>
-                ${cuisine
-                    ? `<p style="margin-top:0.5rem; color:#c0392b; text-transform:capitalize;">
-                       🍴 ${cuisine}</p>`
-                    : ''}
-                ${place.formatted_phone_number
-                    ? `<p style="margin-top:0.5rem;">📞 ${place.formatted_phone_number}</p>`
-                    : ''}
-                ${place.website
-                    ? `<p style="margin-top:0.5rem;">🌐 <a href="${place.website}"
-                       target="_blank" style="color:#c0392b;">Visit Website</a></p>`
-                    : ''}
-                <details style="margin-top:1rem;">
-                    <summary style="cursor:pointer; font-weight:bold; color:#c0392b;">🕐 Hours</summary>
-                    <p style="margin-top:0.5rem; font-size:0.9rem; line-height:2;">${hours}</p>
-                </details>
-                <div style="margin-top:1.5rem;">
-                    <a href="/party/create?r_name=${encodeURIComponent(place.name)}&c=${encodeURIComponent(cuisine)}"
-                       class="btn btn-red" style="width:100%; text-align:center; display:block;">
-                       🎉 Create a Party Here
-                    </a>
-                </div>
-            `;
-
-            document.getElementById('modal').style.display = 'flex';
-        });
-    }
-
-    function closeModal() {
-        document.getElementById('modal').style.display = 'none';
-    }
-
-    function resetSearch() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('typeFilter').value = 'restaurant';
-        searchRestaurants();
-    }
-
-    document.getElementById('modal').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
-</script>
-
-<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places&callback=initPlaces"
-    async defer></script>
-
-{% endblock %}
+    </div>
+</body>
+</html>

@@ -1,5 +1,13 @@
-{% extends 'base.html' %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Map</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'components/header.html' %}
+    <div class="dashboard-container">
 
 <h1 style="margin-bottom:0.5rem;">🗺️ YYGS Restaurant Map</h1>
 <p style="color:#888; margin-bottom:1.5rem;">Click a pin to see info and get directions</p>
@@ -17,13 +25,15 @@
 <script>
     const API_KEY = "{{ api_key }}";
 
-    const CENTER = { lat: 41.3175, lng: -72.9245 };
+    // Centered slightly to fit the full polygon
+    const CENTER = { lat: 41.3180, lng: -72.9250 };
 
+    // Expanded bounding box to completely encapsulate the blue polygon shape
     const BOUNDS = {
-        north: 41.3215,
-        south: 41.3135,
+        north: 41.3255,
+        south: 41.3105,
         east: -72.9195,
-        west: -72.9265
+        west: -72.9310
     };
 
     let map;
@@ -48,14 +58,18 @@
             ]
         });
 
-        // Draw boundary rectangle
-        new google.maps.Rectangle({
-            bounds: {
-                north: BOUNDS.north,
-                south: BOUNDS.south,
-                east: BOUNDS.east,
-                west: BOUNDS.west
-            },
+        // 1. Define the coordinates tracing your blue non-box shape
+        const campusCoords = [
+            { lat: 41.3112, lng: -72.9305 }, // Bottom-Left (Elm & York)
+            { lat: 41.3245, lng: -72.9295 }, // Top-Left (Winchester / Canal)
+            { lat: 41.3250, lng: -72.9205 }, // Top-Right (Science Hill)
+            { lat: 41.3168, lng: -72.9210 }, // Mid-Right (Whitney & Trumbull)
+            { lat: 41.3112, lng: -72.9230 }  // Bottom-Right (Elm & Temple)
+        ];
+
+        // 2. Draw the Polygon instead of a Rectangle
+        const campusPolygon = new google.maps.Polygon({
+            paths: campusCoords,
             map: map,
             strokeColor: '#c0392b',
             strokeOpacity: 0.8,
@@ -67,7 +81,6 @@
         infoWindow = new google.maps.InfoWindow();
         service = new google.maps.places.PlacesService(map);
 
-        // Search for restaurants in boundary
         service.nearbySearch({
             bounds: new google.maps.LatLngBounds(
                 { lat: BOUNDS.south, lng: BOUNDS.west },
@@ -77,7 +90,13 @@
             keyword: 'food'
         }, (results, status) => {
             if (status !== google.maps.places.PlacesServiceStatus.OK) return;
-            results.forEach(place => addMarker(place));
+            
+            results.forEach(place => {
+                // 3. Only place a marker if the restaurant is inside the polygon
+                if (google.maps.geometry.poly.containsLocation(place.geometry.location, campusPolygon)) {
+                    addMarker(place);
+                }
+            });
         });
     }
 
@@ -129,26 +148,15 @@
                             <h2 style="margin-bottom:0.3rem;">${details.name}</h2>
                             <p style="color:#888; margin-bottom:0.4rem;">${details.vicinity}</p>
                             <p>${rating} &nbsp; ${price} &nbsp; ${openNow}</p>
-                            ${cuisine
-                                ? `<p style="margin-top:0.4rem; color:#c0392b; text-transform:capitalize;">
-                                   🍴 ${cuisine}</p>`
-                                : ''}
-                            ${details.formatted_phone_number
-                                ? `<p style="margin-top:0.4rem;">📞 ${details.formatted_phone_number}</p>`
-                                : ''}
+                            ${cuisine ? `<p style="margin-top:0.4rem; color:#c0392b; text-transform:capitalize;">🍴 ${cuisine}</p>` : ''}
+                            ${details.formatted_phone_number ? `<p style="margin-top:0.4rem;">📞 ${details.formatted_phone_number}</p>` : ''}
                         </div>
                         <div style="display:flex; flex-direction:column; gap:0.5rem; flex-shrink:0;">
-                            <a href="${details.url}" target="_blank" class="btn btn-red">
-                                🗺️ Get Directions
-                            </a>
-                            <a href="/party/create?r_name=${encodeURIComponent(details.name)}&c=${encodeURIComponent(cuisine)}"
-                               class="btn btn-outline">
-                                🎉 Create Party
-                            </a>
+                            <a href="${details.url}" target="_blank" class="btn btn-red">🗺️ Get Directions</a>
+                            <a href="/party/create?r_name=${encodeURIComponent(details.name)}&c=${encodeURIComponent(cuisine)}" class="btn btn-outline">🎉 Create Party</a>
                         </div>
                     </div>
                 `;
-
                 panel.style.display = 'block';
                 panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             });
@@ -156,7 +164,9 @@
     }
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places&callback=initMap"
+<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places,geometry&callback=initMap"
     async defer></script>
 
-{% endblock %}
+    </div>
+</body>
+</html>
