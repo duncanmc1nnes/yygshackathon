@@ -1,5 +1,13 @@
-{% extends 'base.html' %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Map</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'components/header.html' %}
+    <div class="dashboard-container">
 
 <h1 style="margin-bottom:0.5rem;">🗺️ YYGS Restaurant Map</h1>
 <p style="color:#888; margin-bottom:1.5rem;">Click a pin to see info and get directions</p>
@@ -48,7 +56,6 @@
             ]
         });
 
-        // Draw boundary rectangle
         new google.maps.Rectangle({
             bounds: {
                 north: BOUNDS.north,
@@ -67,7 +74,6 @@
         infoWindow = new google.maps.InfoWindow();
         service = new google.maps.places.PlacesService(map);
 
-        // Search for restaurants in boundary
         service.nearbySearch({
             bounds: new google.maps.LatLngBounds(
                 { lat: BOUNDS.south, lng: BOUNDS.west },
@@ -129,22 +135,12 @@
                             <h2 style="margin-bottom:0.3rem;">${details.name}</h2>
                             <p style="color:#888; margin-bottom:0.4rem;">${details.vicinity}</p>
                             <p>${rating} &nbsp; ${price} &nbsp; ${openNow}</p>
-                            ${cuisine
-                                ? `<p style="margin-top:0.4rem; color:#c0392b; text-transform:capitalize;">
-                                   🍴 ${cuisine}</p>`
-                                : ''}
-                            ${details.formatted_phone_number
-                                ? `<p style="margin-top:0.4rem;">📞 ${details.formatted_phone_number}</p>`
-                                : ''}
+                            ${cuisine ? `<p style="margin-top:0.4rem; color:#c0392b; text-transform:capitalize;">🍴 ${cuisine}</p>` : ''}
+                            ${details.formatted_phone_number ? `<p style="margin-top:0.4rem;">📞 ${details.formatted_phone_number}</p>` : ''}
                         </div>
                         <div style="display:flex; flex-direction:column; gap:0.5rem; flex-shrink:0;">
-                            <a href="${details.url}" target="_blank" class="btn btn-red">
-                                🗺️ Get Directions
-                            </a>
-                            <a href="/party/create?r_name=${encodeURIComponent(details.name)}&c=${encodeURIComponent(cuisine)}"
-                               class="btn btn-outline">
-                                🎉 Create Party
-                            </a>
+                            <a href="${details.url}" target="_blank" class="btn btn-red">🗺️ Get Directions</a>
+                            <a href="/party/create?r_name=${encodeURIComponent(details.name)}&c=${encodeURIComponent(cuisine)}" class="btn btn-outline">🎉 Create Party</a>
                         </div>
                     </div>
                 `;
@@ -159,4 +155,6 @@
 <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places&callback=initMap"
     async defer></script>
 
-{% endblock %}
+    </div>
+</body>
+</html>
