@@ -1,8 +1,8 @@
-import random
 import string
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from models import db, Party, Member, Message, User, Friendship, DirectMessage, ChatRoom, ChatRoomMember, ChatRoomMessage
 from functools import wraps
+import chat
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -12,14 +12,6 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
-
-def generate_room_code(length=8):
-    """Generate a unique random alphanumeric room code."""
-    while True:
-        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
-        if not ChatRoom.query.filter_by(code=code).first():
-            return code
 
 def login_required(f):
     @wraps(f)
@@ -37,18 +29,9 @@ def login_required(f):
 def home():
     user = User.query.get(session['user_id'])
     parties = Party.query.order_by(Party.created_at.desc()).all()
-
-    sent = Friendship.query.filter_by(requester_id=user.id, status='accepted').all()
-    received = Friendship.query.filter_by(receiver_id=user.id, status='accepted').all()
-    friends = [f.receiver for f in sent] + [f.requester for f in received]
-
-    pending = Friendship.query.filter_by(receiver_id=user.id, status='pending').all()
-
-    memberships = ChatRoomMember.query.filter_by(user_id=user.id).all()
-    rooms = [m.room for m in memberships]
-
+    chat_info = chat.chat_info(user.id)
     return render_template('home.html', user=user, username=session['username'],
-                           parties=parties, friends=friends, pending=pending, rooms=rooms)
+            parties=parties, friends=chat_info["friends"], pending=chat_info["pending"], rooms=chat_info["rooms"])
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -96,21 +79,8 @@ def logout():
 @app.route('/search', methods=['GET', 'POST'])
 @login_required
 def search_users():
-    results = []
-    query = ''
-    if request.method == 'POST':
-        query = request.form.get('query', '').strip()
-        if query:
-            if query.isdigit():
-                found = User.query.filter_by(id=int(query)).first()
-                if found and found.id != session['user_id']:
-                    results = [found]
-            else:
-                results = User.query.filter(
-                    User.username.ilike(f'%{query}%'),
-                    User.id != session['user_id']
-                ).all()
-    return render_template('search.html', results=results, query=query)
+    info = chat.user_search(request=request, session=session)
+    return render_template('search.html', results=info["results"], query=info["query"])
 
 # ─── Friend System ────────────────────────────────────────────────────────────
 
