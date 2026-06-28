@@ -44,7 +44,7 @@
                         {% else %}
                             <form method="POST" action="{{ url_for('join_room') }}" style="display:inline;">
                                 <input type="hidden" name="code" value="{{ room.code }}">
-                                <button type="submit">Join</button>
+                                <button type="submit" class="join-btn">Join</button>
                             </form>
                         {% endif %}
                     </td>
