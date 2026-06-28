@@ -27,14 +27,24 @@ def login_required(f):
     return decorated_function
 
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
     user = User.query.get(session['user_id'])
     parties = Party.query.order_by(Party.created_at.desc()).all()
     chat_info = chat.chat_info(user.id)
+    
+    search_results = None
+    search_query = None
+    
+    if request.method == 'POST':
+        info = chat.user_search(request=request, session=session)
+        search_results = info.get("results")
+        search_query = info.get("query")
+        
     return render_template('home.html', user=user, username=session['username'],
-            parties=parties, friends=chat_info["friends"], pending=chat_info["pending"], rooms=chat_info["rooms"])
+            parties=parties, friends=chat_info["friends"], pending=chat_info["pending"], rooms=chat_info["rooms"],
+            search_results=search_results, search_query=search_query)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -93,13 +103,13 @@ def add_friend(target_id):
     val = chat.add_friend(session=session, target_id=target_id)
     if val == "self":
         flash("You can't add yourself.", 'error')
-        return redirect(url_for('search_users'))
+        return redirect(request.referrer or url_for('home'))
     else:
         if val == "previous":
             flash('Friend request already sent or you are already friends.', 'error')
         else:
             flash('Friend request sent!', 'success')
-        return redirect(url_for('search_users'))
+        return redirect(request.referrer or url_for('home'))
 
 @app.route('/friends/accept/<int:friendship_id>', methods=['POST'])
 @login_required
