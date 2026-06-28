@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    {% include 'components/header.html' %}
     <h1>{{ room.name }}</h1>
     <p class="links">
         Room Code: <strong><code>{{ room.code }}</code></strong> |

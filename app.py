@@ -26,7 +26,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# ─── Auth Routes ──────────────────────────────────────────────────────────────
 
 @app.route('/')
 @login_required
@@ -84,81 +83,55 @@ def logout():
 @login_required
 def search_users():
     info = chat.user_search(request=request, session=session)
-    return render_template('search.html', results=info["results"], query=info["query"])
+    return render_template('chat/search.html', results=info["results"], query=info["query"])
 
 # ─── Friend System ────────────────────────────────────────────────────────────
 
 @app.route('/friends/add/<int:target_id>', methods=['POST'])
 @login_required
 def add_friend(target_id):
-    user_id = session['user_id']
-    if target_id == user_id:
+    val = chat.add_friend(session=session, target_id=target_id)
+    if val == "self":
         flash("You can't add yourself.", 'error')
         return redirect(url_for('search_users'))
-    existing = Friendship.query.filter(
-        ((Friendship.requester_id == user_id) & (Friendship.receiver_id == target_id)) |
-        ((Friendship.requester_id == target_id) & (Friendship.receiver_id == user_id))
-    ).first()
-    if existing:
-        flash('Friend request already sent or you are already friends.', 'error')
     else:
-        friendship = Friendship(requester_id=user_id, receiver_id=target_id, status='pending')
-        db.session.add(friendship)
-        db.session.commit()
-        flash('Friend request sent!', 'success')
-    return redirect(url_for('search_users'))
+        if val == "previous":
+            flash('Friend request already sent or you are already friends.', 'error')
+        else:
+            flash('Friend request sent!', 'success')
+        return redirect(url_for('search_users'))
 
 @app.route('/friends/accept/<int:friendship_id>', methods=['POST'])
 @login_required
 def accept_friend(friendship_id):
-    friendship = Friendship.query.get_or_404(friendship_id)
-    if friendship.receiver_id != session['user_id']:
+    val = chat.accept_friend(friendship_id=friendship_id, session=session)
+    if val == "fail":
         flash('Unauthorized.', 'error')
         return redirect(url_for('home'))
-    friendship.status = 'accepted'
-    db.session.commit()
     flash('Friend request accepted!', 'success')
     return redirect(url_for('home'))
 
 @app.route('/friends/decline/<int:friendship_id>', methods=['POST'])
 @login_required
 def decline_friend(friendship_id):
-    friendship = Friendship.query.get_or_404(friendship_id)
-    if friendship.receiver_id != session['user_id']:
+    val = chat.decline_friend(friendship_id=friendship_id, session=session)
+    if val == "fail":
         flash('Unauthorized.', 'error')
         return redirect(url_for('home'))
-    db.session.delete(friendship)
-    db.session.commit()
     flash('Friend request declined.', 'info')
     return redirect(url_for('home'))
 
-# ─── Direct Messages ──────────────────────────────────────────────────────────
 
 @app.route('/dm/<int:friend_id>', methods=['GET', 'POST'])
 @login_required
 def direct_message(friend_id):
-    user_id = session['user_id']
-    friend = User.query.get_or_404(friend_id)
-    friendship = Friendship.query.filter(
-        ((Friendship.requester_id == user_id) & (Friendship.receiver_id == friend_id)) |
-        ((Friendship.requester_id == friend_id) & (Friendship.receiver_id == user_id)),
-        Friendship.status == 'accepted'
-    ).first()
-    if not friendship:
+    val = chat.send_dm(session=session, friend_id=friend_id, request=request)
+    if val == "not":
         flash('You must be friends to send a direct message.', 'error')
         return redirect(url_for('home'))
-    if request.method == 'POST':
-        content = request.form.get('content', '').strip()
-        if content:
-            dm = DirectMessage(sender_id=user_id, receiver_id=friend_id, content=content)
-            db.session.add(dm)
-            db.session.commit()
+    if val == "post":
         return redirect(url_for('direct_message', friend_id=friend_id))
-    messages = DirectMessage.query.filter(
-        ((DirectMessage.sender_id == user_id) & (DirectMessage.receiver_id == friend_id)) |
-        ((DirectMessage.sender_id == friend_id) & (DirectMessage.receiver_id == user_id))
-    ).order_by(DirectMessage.timestamp.asc()).all()
-    return render_template('dm.html', friend=friend, messages=messages, current_user_id=user_id)
+    return render_template('chat/dm.html', friend=User.query.get_or_404(friend_id), messages=val, current_user_id=session['user_id'])
 
 # ─── Chat Rooms ───────────────────────────────────────────────────────────────
 
@@ -167,68 +140,44 @@ def direct_message(friend_id):
 def create_room():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
-        is_public = request.form.get('is_public') == 'true'
         if not name:
             flash('Room name is required.', 'error')
             return redirect(url_for('create_room'))
-        code = generate_room_code()
-        chat_room = ChatRoom(name=name, code=code, is_public=is_public, owner_id=session['user_id'])
-        db.session.add(chat_room)
-        db.session.flush()
-        membership = ChatRoomMember(user_id=session['user_id'], room_id=chat_room.id)
-        db.session.add(membership)
-        db.session.commit()
-        flash(f'Room created! Share the code: {code}', 'success')
-        return redirect(url_for('room', room_id=chat_room.id))
-    return render_template('create_room.html')
+        val = chat.create_room(session=session, request=request, name=name)
+        flash(f'Room created! Share the code: {val["code"]}', 'success')
+        return redirect(url_for('room', room_id=val["chat_room"].id))
+    return render_template('chat/create_room.html')
 
 @app.route('/rooms/join', methods=['GET', 'POST'])
 @login_required
 def join_room():
     if request.method == 'POST':
-        code = request.form.get('code', '').strip().upper()
-        chat_room = ChatRoom.query.filter_by(code=code).first()
-        if not chat_room:
-            flash('Invalid room code.', 'error')
-            return redirect(url_for('join_room'))
-        existing = ChatRoomMember.query.filter_by(user_id=session['user_id'], room_id=chat_room.id).first()
-        if existing:
-            flash('You are already in this room.', 'info')
-            return redirect(url_for('room', room_id=chat_room.id))
-        membership = ChatRoomMember(user_id=session['user_id'], room_id=chat_room.id)
-        db.session.add(membership)
-        db.session.commit()
-        flash(f'Joined room: {chat_room.name}!', 'success')
-        return redirect(url_for('room', room_id=chat_room.id))
-    return render_template('join_room.html')
+        val : dict = chat.join_room
+        flash(val["flash"][0], val["flash"][1])
+        if "id" in val:
+            return redirect(url_for(val["url"], room_id=val["id"]))
+        return redirect(url_for(val["url"]))
+    return render_template('chat/join_room.html')
 
 @app.route('/rooms/browse')
 @login_required
 def browse_rooms():
     rooms = ChatRoom.query.filter_by(is_public=True).order_by(ChatRoom.created_at.desc()).all()
     user_room_ids = {m.room_id for m in ChatRoomMember.query.filter_by(user_id=session['user_id']).all()}
-    return render_template('browse_rooms.html', rooms=rooms, user_room_ids=user_room_ids)
+    return render_template('chat/browse_rooms.html', rooms=rooms, user_room_ids=user_room_ids)
 
 @app.route('/rooms/<int:room_id>', methods=['GET', 'POST'])
 @login_required
 def room(room_id):
-    chat_room = ChatRoom.query.get_or_404(room_id)
-    membership = ChatRoomMember.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
-    if not membership:
+    val = chat.room(room_id=room_id, session=session, request=request)
+    if val["status"] == "fail":
         flash('You are not a member of this room.', 'error')
         return redirect(url_for('home'))
-    if request.method == 'POST':
-        content = request.form.get('content', '').strip()
-        if content:
-            msg = ChatRoomMessage(room_id=room_id, sender_id=session['user_id'], content=content)
-            db.session.add(msg)
-            db.session.commit()
+    if val["status"] == "post":
         return redirect(url_for('room', room_id=room_id))
-    messages = ChatRoomMessage.query.filter_by(room_id=room_id).order_by(ChatRoomMessage.timestamp.asc()).all()
-    members = ChatRoomMember.query.filter_by(room_id=room_id).all()
-    return render_template('room.html', room=chat_room, messages=messages, members=members, current_user_id=session['user_id'])
+    return render_template(val["args"]["url"], room=val["args"]["room"], messages=val["args"]["messages"],
+                           members=val["args"]["members"], current_user_id=val["args"]["current_user_id"])
 
-# ─── Party Routes ─────────────────────────────────────────────────────────────
 
 @app.route('/party/create', methods=['GET', 'POST'])
 @login_required
