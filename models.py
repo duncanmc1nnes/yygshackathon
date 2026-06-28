@@ -10,7 +10,7 @@ class Party(db.Model):
     c = db.Column(db.String(100), nullable=False)
     p_size = db.Column(db.Integer, default=6)
     p_host = db.Column(db.String(100), nullable=False)
-    p_date = db.Column(db.DateTime, nullable=False)
+    p_date = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now(UTC))
     members = db.relationship('Member', backref='party', lazy=True)
     messages = db.relationship('Message', backref='party', lazy=True)

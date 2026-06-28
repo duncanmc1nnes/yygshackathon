@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from models import db, Party, Member, Message, User, Friendship, DirectMessage, ChatRoom, ChatRoomMember, ChatRoomMessage
 from functools import wraps
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 import chat
@@ -184,19 +185,17 @@ def room(room_id):
 def create_party():
     if request.method == 'POST':
         new_party = Party(
-            r_name=request.form['r_name'],
+            r_name=request.form['r-name'],
             c=request.form['c'],
-            p_size=request.form['p_size'],
+            p_size=1,
             p_host=session['username'],
-            p_date=request.form['p_date']
+            p_date=request.form['p-date']
         )
         db.session.add(new_party)
-        db.session.commit()
+        db.session.commit() 
         flash('Party created!', 'success')
         return redirect(url_for('home'))
-    r_name = request.args.get('r_name', '')
-    c = request.args.get('c', '')
-    return render_template('create_party.html', r_name=r_name, c=c)
+    return render_template('party/create_party.html')
 
 @app.route('/party/<int:party_id>')
 @login_required
@@ -257,7 +256,7 @@ def party_search():
     parties = parties.order_by(Party.created_at.desc()).all()
     if len(parties) == 0:
         flash("No parties found!", 'info')
-    return render_template('party_search.html', parties=parties)
+    return render_template('party/party_search.html', parties=parties, cusine=cuisine, start_date=start_date, end_date=end_date)
 
 # ─── Restaurant Search ────────────────────────────────────────────────────────
 

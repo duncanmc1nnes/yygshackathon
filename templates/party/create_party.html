@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ header_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'components/header.html' %}
+    <section class="hero">
+        <div class="hero-content">
+
+            <h1>Party <span>Create</span></h1>
+            <h3 class="subtitle">Party Information:</h3>
+            <form method="POST" class="form">
+                Restaurant: <input name="r-name"><br>
+                Cuisine: <input name="c"><br>
+                Time: <input type="datetime-local" name="p-date"><br>
+                <input type="submit" value="Create">
+            </form>
+        </div>
+    </section>
+</body>
+</html>
