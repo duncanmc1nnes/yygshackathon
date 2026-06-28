@@ -25,13 +25,14 @@
 <script>
     const API_KEY = "{{ api_key }}";
 
-    const CENTER = { lat: 41.3175, lng: -72.9245 };
+    const CENTER = { lat: 41.3165, lng: -72.9250 };
 
+    // Expanded restriction bounds so the user can pan around the entire shape without it clipping
     const BOUNDS = {
-        north: 41.3215,
-        south: 41.3135,
-        east: -72.9195,
-        west: -72.9265
+        north: 41.3300, 
+        south: 41.3050,
+        east: -72.9150,
+        west: -72.9350
     };
 
     let map;
@@ -44,10 +45,10 @@
             zoom: 15,
             restriction: {
                 latLngBounds: {
-                    north: BOUNDS.north + 0.005,
-                    south: BOUNDS.south - 0.005,
-                    east: BOUNDS.east + 0.005,
-                    west: BOUNDS.west - 0.005
+                    north: BOUNDS.north,
+                    south: BOUNDS.south,
+                    east: BOUNDS.east,
+                    west: BOUNDS.west
                 },
                 strictBounds: false
             },
@@ -56,13 +57,28 @@
             ]
         });
 
-        new google.maps.Rectangle({
-            bounds: {
-                north: BOUNDS.north,
-                south: BOUNDS.south,
-                east: BOUNDS.east,
-                west: BOUNDS.west
-            },
+        // Coordinates tracing the exact outline you drew
+        const campusCoords = [
+            { lat: 41.3082, lng: -72.9312 }, // Bottom-Left (Chapel & York)
+            { lat: 41.3120, lng: -72.9300 }, // Up York St
+            { lat: 41.3128, lng: -72.9318 }, // Out towards Park St
+            { lat: 41.3155, lng: -72.9308 }, // Up towards Payne Whitney
+            { lat: 41.3175, lng: -72.9290 }, // Curve along Ashmun St
+            { lat: 41.3210, lng: -72.9285 }, // Up Canal/Winchester
+            { lat: 41.3245, lng: -72.9265 }, // Top-Left of Science Hill
+            { lat: 41.3255, lng: -72.9220 }, // Top Edge (Edwards/Sachem)
+            { lat: 41.3210, lng: -72.9185 }, // Top-Right (Whitney & Humphrey)
+            { lat: 41.3165, lng: -72.9212 }, // Down Whitney Ave
+            { lat: 41.3125, lng: -72.9232 }, // Temple & Grove
+            { lat: 41.3115, lng: -72.9235 }, // Temple & Elm
+            { lat: 41.3120, lng: -72.9255 }, // West on Elm to College St
+            { lat: 41.3085, lng: -72.9265 }, // South on College to Chapel
+            { lat: 41.3082, lng: -72.9312 }  // Close the loop back to York
+        ];
+
+        // Draw the exact custom shape
+        const campusPolygon = new google.maps.Polygon({
+            paths: campusCoords,
             map: map,
             strokeColor: '#c0392b',
             strokeOpacity: 0.8,
@@ -83,7 +99,13 @@
             keyword: 'food'
         }, (results, status) => {
             if (status !== google.maps.places.PlacesServiceStatus.OK) return;
-            results.forEach(place => addMarker(place));
+            
+            results.forEach(place => {
+                // Ensure markers only spawn INSIDE your drawn polygon
+                if (google.maps.geometry.poly.containsLocation(place.geometry.location, campusPolygon)) {
+                    addMarker(place);
+                }
+            });
         });
     }
 
@@ -144,7 +166,6 @@
                         </div>
                     </div>
                 `;
-
                 panel.style.display = 'block';
                 panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             });
@@ -152,8 +173,7 @@
     }
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places&callback=initMap"
-    async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places,geometry&callback=initMap" async defer></script>
 
     </div>
 </body>
