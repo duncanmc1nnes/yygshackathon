@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ party.r_name }} — Party</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'components/header.html' %}
+
+    <div class="dashboard-container">
+
+        {% with msgs = get_flashed_messages(with_categories=true) %}
+          {% if msgs %}
+            {% for category, message in msgs %}
+              <div style="padding: 10px; border-radius: 6px; margin-bottom: 15px; background: {% if category == 'error' %}rgba(255,71,87,0.2){% else %}rgba(46,213,115,0.2){% endif %}; border: 1px solid {% if category == 'error' %}#ff4757{% else %}#2ed573{% endif %}; color: white; text-align: center;">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Party Header Banner -->
+        <div class="dashboard-header-banner">
+            <div class="dashboard-welcome">
+                <h1>{{ party.r_name }}</h1>
+                <p>Hosted by <strong>{{ party.p_host }}</strong> &nbsp;|&nbsp; {{ party.c }} &nbsp;|&nbsp; {{ party.p_date }}</p>
+                <p>{{ party.members | length }} / {{ party.p_size }} members</p>
+            </div>
+            <div>
+                {% if is_member %}
+                    {% if room %}
+                        <a href="{{ url_for('room', room_id=room.id) }}" class="btn btn-info" style="margin-right: 10px;">💬 Group Chat</a>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('leave_party', party_id=party.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-logout">Leave Party</button>
+                    </form>
+                {% else %}
+                    <form method="POST" action="{{ url_for('join_party', party_id=party.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-success">Join Party</button>
+                    </form>
+                {% endif %}
+                <a href="{{ url_for('home') }}" class="btn btn-primary" style="margin-left: 10px;">&larr; Home</a>
+            </div>
+        </div>
+
+        <!-- Members List -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2>Members</h2>
+            </div>
+            <ul class="dashboard-list">
+                {% for m in party.members %}
+                <li class="dashboard-list-item">
+                    <span class="item-info">
+                        <span class="item-title">{{ m.name }}</span>
+                        {% if m.name == party.p_host %}<span class="item-subtitle" style="color: #1e90ff;">Host</span>{% endif %}
+                    </span>
+                </li>
+                {% else %}
+                <li><p class="empty-state">No members yet.</p></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+</body>
+</html>

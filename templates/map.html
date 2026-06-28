@@ -25,15 +25,13 @@
 <script>
     const API_KEY = "{{ api_key }}";
 
-    // Centered to perfectly balance the central campus and Science Hill
-    const CENTER = { lat: 41.3165, lng: -72.9250 };
+    const CENTER = { lat: 41.3175, lng: -72.9245 };
 
-    // Expanded bounding box limits so the map restriction doesn't clip the edges
     const BOUNDS = {
-        north: 41.3255,
-        south: 41.3075,
-        east: -72.9190,
-        west: -72.9320
+        north: 41.3215,
+        south: 41.3135,
+        east: -72.9195,
+        west: -72.9265
     };
 
     let map;
@@ -46,10 +44,10 @@
             zoom: 15,
             restriction: {
                 latLngBounds: {
-                    north: BOUNDS.north + 0.002,
-                    south: BOUNDS.south - 0.002,
-                    east: BOUNDS.east + 0.002,
-                    west: BOUNDS.west - 0.002
+                    north: BOUNDS.north + 0.005,
+                    south: BOUNDS.south - 0.005,
+                    east: BOUNDS.east + 0.005,
+                    west: BOUNDS.west - 0.005
                 },
                 strictBounds: false
             },
@@ -58,23 +56,13 @@
             ]
         });
 
-        // Exact outline path matching the blue university campus shape
-        const campusCoords = [
-            { lat: 41.3080, lng: -72.9312 }, // 1. Southwest Corner (Chapel & York)
-            { lat: 41.3142, lng: -72.9305 }, // 2. West Edge (Near Payne Whitney Gym)
-            { lat: 41.3175, lng: -72.9298 }, // 3. Turning towards Ashmun St
-            { lat: 41.3210, lng: -72.9268 }, // 4. Up Mansfield St (West side of Science Hill)
-            { lat: 41.3248, lng: -72.9240 }, // 5. Northwest Corner of Science Hill
-            { lat: 41.3245, lng: -72.9212 }, // 6. Northeast Corner (Sachem & Whitney)
-            { lat: 41.3162, lng: -72.9212 }, // 7. East Edge (Whitney & Trumbull)
-            { lat: 41.3115, lng: -72.9235 }, // 8. Near Temple & Elm
-            { lat: 41.3110, lng: -72.9260 }, // 9. Southeast Corner of Old Campus (Elm & College)
-            { lat: 41.3082, lng: -72.9263 }  // 10. South Edge (Chapel & College)
-        ];
-
-        // Draw the custom non-box shape overlay
-        const campusPolygon = new google.maps.Polygon({
-            paths: campusCoords,
+        new google.maps.Rectangle({
+            bounds: {
+                north: BOUNDS.north,
+                south: BOUNDS.south,
+                east: BOUNDS.east,
+                west: BOUNDS.west
+            },
             map: map,
             strokeColor: '#c0392b',
             strokeOpacity: 0.8,
@@ -95,13 +83,7 @@
             keyword: 'food'
         }, (results, status) => {
             if (status !== google.maps.places.PlacesServiceStatus.OK) return;
-            
-            results.forEach(place => {
-                // Filters out any restaurant pins falling outside your custom polygon shape
-                if (google.maps.geometry.poly.containsLocation(place.geometry.location, campusPolygon)) {
-                    addMarker(place);
-                }
-            });
+            results.forEach(place => addMarker(place));
         });
     }
 
@@ -162,6 +144,7 @@
                         </div>
                     </div>
                 `;
+
                 panel.style.display = 'block';
                 panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             });
@@ -169,7 +152,7 @@
     }
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places,geometry&callback=initMap"
+<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places&callback=initMap"
     async defer></script>
 
     </div>
